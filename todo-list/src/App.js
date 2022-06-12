@@ -1,14 +1,29 @@
 import Item from "./item";
 import "./styles/App.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  addTodoFirebase,
+  deleteFirebase,
+  getAllItems,
+  updateDoneFirebase,
+} from "./firebase";
 
 function App() {
-  const [data, setData] = useState([
-    { text: "Walk the dog", done: false },
-    { text: "Eat the cat", done: true },
-    { text: "Make the food", done: false },
-  ]);
+  const [data, setData] = useState([]);
   const [newItem, setNewItem] = useState("");
+
+  useEffect(() => {
+    getAllItems().then((res) => setData(res));
+  }, []);
+
+  async function addTodo() {
+    if (newItem) {
+      let id = await addTodoFirebase(newItem);
+      setData([...data, { text: newItem, done: false, id }]);
+      setNewItem("");
+    }
+  }
+
   return (
     <div className="App">
       <h1 id="title">Todo List</h1>
@@ -22,10 +37,12 @@ function App() {
             updateDone={(value) => {
               let newData = data;
               newData[i].done = value;
+              updateDoneFirebase(newData[i].id, value);
               setData([...newData]);
             }}
             removeElement={() => {
               let newData = data;
+              deleteFirebase(data[i].id);
               newData.splice(i, 1);
               setData([...newData]);
             }}
@@ -36,10 +53,7 @@ function App() {
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (newItem) {
-            setData([...data, { text: newItem, done: false }]);
-            setNewItem("");
-          }
+          addTodo();
         }}
       >
         <input
@@ -48,12 +62,7 @@ function App() {
           onChange={(e) => setNewItem(e.target.value)}
         />
         <svg
-          onClick={() => {
-            if (newItem) {
-              setData([...data, { text: newItem, done: false }]);
-              setNewItem("");
-            }
-          }}
+          onClick={addTodo}
           className={newItem ? "" : "disabled"}
           xmlns="http://www.w3.org/2000/svg"
           viewBox="0 0 448 512"
